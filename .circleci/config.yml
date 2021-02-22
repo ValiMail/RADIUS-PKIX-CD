@@ -1,0 +1,46 @@
+version: 2.1
+
+workflows:
+  version: 2
+  test_integration:
+    jobs:
+      - "test_freeradius"
+jobs:
+  "test_freeradius":
+    docker:
+      - image: circleci/python:3.8
+    steps:
+      - checkout
+      - run:
+          name: Create private PKIs
+          command: |
+            echo "hi there"
+      - run:
+          name: Install Freeradius
+          command: |
+            echo "hi there"
+      - run:
+          name: Copy in plugin code
+          command: |
+            echo "hi there"
+      - run:
+          name: Start Freeradius server
+          command: |
+            echo "hi there"
+      - run:
+          name: Set Freeradius config
+          command: |
+            echo "hi there"
+      - run:
+          name: Simulate PKIX-CD sync
+          command: |
+            echo "hi there"
+      - run:
+          name: Test successful auth against Freeradius
+          command: |
+            echo "hi there"
+      - run:
+          name: Test failed authz against Freeradius
+          command: |
+            echo "hi there"
+
