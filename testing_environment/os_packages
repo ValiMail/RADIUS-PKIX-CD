@@ -1,0 +1,14 @@
+openssl
+freeradius
+tree
+libssl-dev 
+build-essential  
+pkg-config
+dbus 
+libdbus-1-dev 
+libdbus-glib-1-2 
+libdbus-glib-1-dev 
+libreadline-dev 
+libncurses5-dev
+libnl-genl-3-dev 
+libnl-3-dev
