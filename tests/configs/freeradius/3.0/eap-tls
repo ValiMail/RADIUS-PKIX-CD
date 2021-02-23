@@ -388,7 +388,7 @@ eap {
 			#
 			#  You should also delete all of the files
 			#  in the directory when the server starts.
-	#		tmpdir = /tmp/radiusd
+			tmpdir = /tmp/radiusd
 
 			#  The command used to verify the client cert.
 			#  We recommend using the OpenSSL command-line
@@ -404,6 +404,7 @@ eap {
 			#  returns.
             # THIS IS WHERE WE COMPARE DANE_ID AGAINST AKI
 	#		client = "/path/to/openssl verify -CApath ${..ca_path} %{TLS-Client-Cert-Filename}"
+	        client = "pkix_cd_verify %{TLS-Client-Cert-Filename} /etc/freeradius/aki_map.txt"
 		}
     }
 

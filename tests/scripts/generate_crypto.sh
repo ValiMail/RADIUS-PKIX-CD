@@ -1,3 +1,4 @@
+#!/bin/bash
 set -xe
 ###################################
 # This phase creates all the certs
@@ -50,7 +51,7 @@ mkdir -p ${LOCAL_CA_DIR}/demoCA/
 echo "05" > ${LOCAL_CA_DIR}/demoCA/serial 
 
 
-sudo cp testing_environment/ssl.cnf /usr/lib/ssl/openssl.cnf
+sudo cp tests/configs/ssl/ssl.cnf /usr/lib/ssl/openssl.cnf
 # cat /usr/lib/ssl/openssl.cnf
 
 
@@ -79,7 +80,7 @@ openssl req \
     -x509 \
     -days 7300 \
     -sha256 \
-    -subj "/C=US/ST=CA/O=Example Networks/CN=Example Networks CA" \
+    -subj "/C=US/ST=CA/O=Example Networks/CN=${CA_CN:=NADA}" \
     -out ${LOCAL_CA_CERT}
 openssl x509 -noout -text -in ${LOCAL_CA_CERT}
 touch ${LOCAL_CA_DIR}/demoCA/index.txt

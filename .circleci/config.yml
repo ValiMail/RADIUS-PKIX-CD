@@ -9,26 +9,46 @@ jobs:
   "test_freeradius":
     docker:
       - image: circleci/python:3.8
+    environment:
+      RADIUS_EE_CRYPTO: /etc/freeradius/ee_crypto
+      RADIUS_CLIENT_CRYPTO: /etc/freeradius/client_crypto
+      FREERADIUS_AKI_MAPPING_FILE: /etc/freeradius/aki_map.txt
+      EAPOL_BIN: /home/circleci/project/wpa_supplicant-2.9/wpa_supplicant/eapol_test
+      LEGIT_CERT_PATH: ${RADIUS_CLIENT_CRYPTO}.client_ee.crt
+      ILLEGIT_CERT_PATH: tests/ca1/ecc.air-quality-sensor._device.example.net.cert.pem
+      TRUSTED_CLIENT_CA_FILE: /etc/freeradius/3.0/certs/ca-certificates-combined.crt
+      CA1_PEMFILE: /etc/freeradius/3.0/certs/ca1.cert.pem
+      CA2_PEMFILE: /etc/freeradius/3.0/certs/ca2.cert.pem
+      CA1_CN: Example Networks CA1
+      CA2_CN: Example Networks CA2
+      EAPOL_CONFIG_DIR: ./tests/configs/eapol_test
+      FREERADIUS3_CONFIG_DIR: ./tests/configs/freeradius/3.0
+      SSL_CONFIG_DIR: ./tests/configs/ssl
+      WPA_BUILD_CONFIG_DIR: ./tests/configs/wpa_build
+      TEST_DEPENDENCIES_DIR: ./tests/dependencies
+      TEST_SCRIPTS_BASE: ./tests/scripts
     steps:
       - checkout
       - run:
           name: Install deps
           command: |
               sudo apt-get update
-              cat ./testing_environment/os_packages | sudo xargs apt-get install 
+              cat ${TEST_DEPENDENCIES_DIR}/os_packages | sudo xargs apt-get install 
+              sudo chmod 755 ${TEST_SCRIPTS_BASE}/generate_crypto.sh
       - run:
           name: Build eapol_test
           command: |
               sudo wget https://w1.fi/releases/wpa_supplicant-2.9.tar.gz -O wpa_supplicant-2.9.tar.gz
               sudo tar -zxf ./wpa_supplicant-2.9.tar.gz
-              sudo cp testing_environment/wpa_build_config.conf ./wpa_supplicant-2.9/wpa_supplicant/.config
+              sudo -E cp ${WPA_BUILD_CONFIG_DIR}/wpa_build_config.conf ./wpa_supplicant-2.9/wpa_supplicant/.config
               cd wpa_supplicant-2.9/wpa_supplicant && sudo make eapol_test && sudo make && sudo make install
       - run:
           name: Generate PKI 1
           command: |
               ls -l
               export ORIGIN=${PWD}
-              bash ./testing_environment/generate_crypto.sh
+              export CA_CN=${CA1_CN}
+              sudo -E sh -c '${TEST_SCRIPTS_BASE}/generate_crypto.sh'
               cd ${ORIGIN}
               mkdir -p tests/ca1
               sudo mv ${HOME}/export/* tests/ca1 
@@ -39,7 +59,8 @@ jobs:
           command: |
               ls -l
               export ORIGIN=${PWD}
-              bash ./testing_environment/generate_crypto.sh
+              export CA_CN=${CA2_CN}
+              sudo -E sh -c '${TEST_SCRIPTS_BASE}/generate_crypto.sh'
               cd ${ORIGIN}
               mkdir -p tests/ca2
               sudo mv ${HOME}/export/* tests/ca2 
@@ -47,40 +68,50 @@ jobs:
       - run:
           name: Set Freeradius config
           command: |
-            sudo cp configs/3.0/eap-tls /etc/freeradius/3.0/mods-enabled/eap
-            sudo cp configs/3.0/default /etc/freeradius/3.0/sites-enabled
+            sudo cp ${FREERADIUS3_CONFIG_DIR}/eap-tls /etc/freeradius/3.0/mods-enabled/eap
+            sudo cp ${FREERADIUS3_CONFIG_DIR}/default /etc/freeradius/3.0/sites-enabled
       - run:
           name: Set Freeradius keys and certs
           command: |
-            export RADIUS_EE_CRYPTO=/etc/freeradius/ee_crypto
-            export RADIUS_CLIENT_CRYPTO=/etc/freeradius/client_crypto
+            
             sudo -E mkdir -p ${RADIUS_EE_CRYPTO}
             sudo -E mkdir -p ${RADIUS_CLIENT_CRYPTO}
+            # Move RADIUS server keypair
             sudo -E cp tests/ca1/rsa.air-quality-sensor._device.example.net.key.pem ${RADIUS_EE_CRYPTO}/radius_ee.key
             sudo -E cp tests/ca1/rsa.air-quality-sensor._device.example.net.cert.pem ${RADIUS_EE_CRYPTO}/radius_ee.crt
-            # sudo -E sh -c 'cat tests/ca1/ca.example.net.cert.pem >> ${RADIUS_EE_CRYPTO}/radius_ee.crt'
+            # Move RADIUS client keypair
+            sudo -E cp tests/ca2/ecc.air-quality-sensor._device.example.net.key.pem ${RADIUS_CLIENT_CRYPTO}/client_ee.key
+            sudo -E cp tests/ca2/ecc.air-quality-sensor._device.example.net.cert.pem ${RADIUS_CLIENT_CRYPTO}/client_ee.crt
+            # Append CA certs to EE certs
+            sudo -E sh -c 'cat tests/ca1/ca.example.net.cert.pem >> ${RADIUS_EE_CRYPTO}/radius_ee.crt'  # KILL?
+            # sudo -E sh -c 'cat tests/ca2/ca.example.net.cert.pem >> ${RADIUS_CLIENT_CRYPTO}/client_ee.crt'  # KILL?
             sudo -E sh -c 'cat tests/ca1/ca.example.net.cert.pem > ${RADIUS_CLIENT_CRYPTO}/ca-certificates.crt'
-            sudo -E sh -c 'cp tests/ca1/ca.example.net.cert.pem /etc/freeradius/3.0/certs/ca1.cert.pem'
+            # Copy CA certs to the Freeradius certs dir
+            sudo -E sh -c 'cp tests/ca1/ca.example.net.cert.pem ${CA1_PEMFILE}'
             sudo -E sh -c 'cp tests/ca2/ca.example.net.cert.pem /etc/freeradius/3.0/certs/ca2.cert.pem'
-            sudo sh -c 'cd /etc/freeradius/3.0/certs && sudo c_rehash'
+            # Combine our CA certs into one file for the RADIUS server
+            sudo -E sh -c 'cat ${CA1_PEMFILE} > ${TRUSTED_CLIENT_CA_FILE} && cat ${CA2_PEMFILE} >> ${TRUSTED_CLIENT_CA_FILE}'
+            sudo ls /etc/freeradius/3.0/certs/
+            # Copy private PKI CA certs to openssl's certs dir.
+            sudo cp /etc/freeradius/3.0/certs/ca1.cert.pem /usr/lib/ssl/certs
+            sudo cp /etc/freeradius/3.0/certs/ca2.cert.pem /usr/lib/ssl/certs
+            # Rehash all the certs
+            sudo sh -c 'cd /etc/freeradius/3.0/certs && sudo c_rehash ./ && sudo c_rehash' # one of these rehashes is unnecessary.
+            # Peek at what we've done...
             echo "RADIUS EE crypto dir: ${RADIUS_EE_CRYPTO}"
             sudo -E ls ${RADIUS_EE_CRYPTO}
             echo "RADIUS client crypto dir: ${RADIUS_CLIENT_CRYPTO}"
-            sudo ls ${RADIUS_CLIENT_CRYPTO}
+            sudo ls -lah ${RADIUS_CLIENT_CRYPTO}
+            whoami
             echo "RADIUS key and cert:"
             sudo -E chown -R freerad:freerad ${RADIUS_EE_CRYPTO}
+            sudo -E chown -R circleci ${RADIUS_CLIENT_CRYPTO}
+            sudo -E ls -lah ${RADIUS_CLIENT_CRYPTO}
+            sudo -E ls -lah ${RADIUS_EE_CRYPTO}
+            
       - run:
           name: Simulate PKIX-CD sync
           command: |
-            echo "Add ca2 like we discovered it."
-            sudo -E sh -c 'cat tests/ca2/ca.example.net.cert.pem >> ${RADIUS_CLIENT_CRYPTO}/ca-certificates.crt'
-            export FREERADIUS_AKI_MAPPING_FILE=/etc/freeradius/aki_map.txt
-            export LEGIT_CERT_PATH=tests/ca2/ecc.air-quality-sensor._device.example.net.cert.pem
-            export ILLEGIT_CERT_PATH=tests/ca1/ecc.air-quality-sensor._device.example.net.cert.pem
-            echo "Add ca2 like we discovered it."
-            sudo -E sh -c 'cat tests/ca2/ca.example.net.cert.pem >> ${RADIUS_CLIENT_CRYPTO}/ca-certificates.crt'
-            # Add CA cert to client EE PEM file.
-            sudo -E sh -c 'cat tests/ca2/ca.example.net.cert.pem >> ${LEGIT_CERT_PATH}'
             echo "Get the legit AKI"
             export LEGIT_AKI=`openssl x509 -noout -text -in ${LEGIT_CERT_PATH} | grep -A1 "X509v3 Authority Key Identifier" | tail -1 | sed -e 's/keyid://g' -e 's/[[:space:]]//g'`
             echo "Get the legit DNS name" 
@@ -98,8 +129,7 @@ jobs:
           command: |
             sudo freeradius -X &
             sleep 5
-            export EAPOL_BIN=/home/circleci/project/wpa_supplicant-2.9/wpa_supplicant/eapol_test
             echo ">>>>TESTING GOOD CONFIG"
-            ${EAPOL_BIN} -c testing_environment/eapol_test.conf -s testing123 -r 1
+            sudo -E sh -c '${EAPOL_BIN} -c ${EAPOL_CONFIG_DIR}/eapol_test.conf -s testing123 -r 1'
             echo ">>>>TESTING BAD CONFIG"
-            # ${EAPOL_BIN} -c testing_environment/eapol_test.conf -s testing123 && exit 1
+            sudo -E sh -c '${EAPOL_BIN} -c ${EAPOL_CONFIG_DIR}/eapol_test_fail.conf -s testing123 -r 1' && echo ">>>>This test is supposed to fail, and you should not see this message" &&exit 1
