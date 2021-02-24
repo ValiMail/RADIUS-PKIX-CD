@@ -1,0 +1,3 @@
+SSID1|my._device.example.com
+SSID1|your._device.example.com
+SSID2|your._device.example.com

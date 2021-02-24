@@ -404,7 +404,7 @@ eap {
 			#  returns.
             # THIS IS WHERE WE COMPARE DANE_ID AGAINST AKI
 	#		client = "/path/to/openssl verify -CApath ${..ca_path} %{TLS-Client-Cert-Filename}"
-	        client = "pkix_cd_verify %{TLS-Client-Cert-Filename} /etc/freeradius/aki_map.txt"
+	#        client = "pkix_cd_verify %{TLS-Client-Cert-Filename} /etc/freeradius/aki_map.txt"
 		}
     }
 

@@ -15,7 +15,8 @@ This toolset contains a few tools:
     * Don't blame me. 
     * Blame whoever wanted to discover the chain using certificate DNs instead of public key hashes.
 
-``pkix_cd_verify``: This tool accepts arguments for ``certfile`` and ``trust_map``.
+``pkix_cd_verify``: This tool accepts arguments for ``realm``, ``certfile`` and ``trust_map``.
 
+* ``realm`` is the authorization realm. For instance, SSID or whatever the Called-Station-ID is.
 * ``certfile`` is the path of the entity certificate file we want to verify.
 * ``trust_map`` is the path to the trust map file, which correlates the identity to the allowed CA certificate AKI.

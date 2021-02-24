@@ -66,14 +66,22 @@ jobs:
               sudo mv ${HOME}/export/* tests/ca2 
               sudo chown -R `whoami` ${HOME}
       - run:
+          name: Install radius_pkix_cd
+          command: |
+              pip3 install -e .
+      - run:
+          name: Test radius_pkix_cd
+          command: |
+              pip3 install -r tests/dependencies/requirements-test.txt
+              python3 -m py.test --cov=radius_pkix_cd --cov-report=xml --cov-report=term-missing ./tests/integration/
+      - run:
           name: Set Freeradius config
           command: |
             sudo cp ${FREERADIUS3_CONFIG_DIR}/eap-tls /etc/freeradius/3.0/mods-enabled/eap
             sudo cp ${FREERADIUS3_CONFIG_DIR}/default /etc/freeradius/3.0/sites-enabled
       - run:
-          name: Set Freeradius keys and certs
+          name: Set keys and certs
           command: |
-            
             sudo -E mkdir -p ${RADIUS_EE_CRYPTO}
             sudo -E mkdir -p ${RADIUS_CLIENT_CRYPTO}
             # Move RADIUS server keypair
@@ -127,6 +135,8 @@ jobs:
       - run:
           name: Start Freeradius server and test eapol
           command: |
+            mkdir -p /tmp/radiusd
+            sudo chown freerad:freerad /tmp/radiusd
             sudo freeradius -X &
             sleep 5
             echo ">>>>TESTING GOOD CONFIG"
