@@ -4,6 +4,7 @@ import json
 import sys
 
 from dane_discovery.dane import DANE
+from dane_discovery.identity import Identity
 
 from radius_pkix_cd.utility import Utility
 
@@ -16,6 +17,8 @@ parser.add_argument("--called", dest="called", required=True, help="Called-Stati
 parser.add_argument("--calling", dest="calling", required=True, help="Callling-Station-Id.")
 parser.add_argument("--certfile", dest="certfile", required=True, help="Certificate file presented by supplicant.")
 parser.add_argument("--trustmap", dest="trustmap", required=True, help="Trust map, provided by pkix_cd_manage_trust.")
+parser.add_argument("--live-verify", dest="live_verify", required=False, action="store_true", help="Verify directly against DNS, in addition to cached information.")
+parser.set_defaults(live_verify=False)
 
 
 
@@ -55,7 +58,14 @@ def main():
         print("Presented certificate does not map to PKIX-CD authority certificate!")
         print("{} not in {}".format(aki, current_map[ssid][args.calling]))
         exit(4)
-    
+
+    # Finally, we check the cert against the live DNS config!
+    if args.live_verify:
+        identity = Identity(args.calling)
+        success, reason = identity.validate_certificate(cert_pem)
+        if not success:
+            print("Failed PKIX-CD authentication: {}".format(reason))
+            exit(5)
     # If we've survived to this point, we win!
     exit(0)
 

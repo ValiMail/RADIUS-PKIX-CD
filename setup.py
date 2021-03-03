@@ -37,7 +37,7 @@ setup(name=PROJECT_NAME,
       url="https://github.com/valimail/{}".format(PROJECT_NAME),
       packages=[PROJECT_NAME],
       long_description=build_long_desc(),
-      install_requires=["dane-discovery==0.7"],
+      install_requires=["dane-discovery==0.9"],
       entry_points={
           "console_scripts": [
               "pkix_cd_manage_trust = radius_pkix_cd.scripts.pkix_cd_manage_trust:main",
