@@ -13,8 +13,9 @@ jobs:
       RADIUS_EE_CRYPTO: /etc/freeradius/ee_crypto
       RADIUS_CLIENT_CRYPTO: /etc/freeradius/client_crypto
       FREERADIUS_AKI_MAPPING_FILE: /etc/freeradius/aki_map.txt
+      FREERADIUS_TRUST_MAP: /etc/freeradius/trust_map.json
       EAPOL_BIN: /home/circleci/project/wpa_supplicant-2.9/wpa_supplicant/eapol_test
-      LEGIT_CERT_PATH: ${RADIUS_CLIENT_CRYPTO}.client_ee.crt
+      LEGIT_CERT_PATH: tests/ca2/ecc.air-quality-sensor._device.example.net.cert.pem
       ILLEGIT_CERT_PATH: tests/ca1/ecc.air-quality-sensor._device.example.net.cert.pem
       TRUSTED_CLIENT_CA_FILE: /etc/freeradius/3.0/certs/ca-certificates-combined.crt
       CA1_PEMFILE: /etc/freeradius/3.0/certs/ca1.cert.pem
@@ -68,7 +69,9 @@ jobs:
       - run:
           name: Install radius_pkix_cd
           command: |
-              pip3 install -e .
+              sudo pip3 install -e .
+              pkix_cd_manage_trust -h
+              pkix_cd_verify -h
       - run:
           name: Test radius_pkix_cd
           command: |
@@ -91,14 +94,14 @@ jobs:
             sudo -E cp tests/ca2/ecc.air-quality-sensor._device.example.net.key.pem ${RADIUS_CLIENT_CRYPTO}/client_ee.key
             sudo -E cp tests/ca2/ecc.air-quality-sensor._device.example.net.cert.pem ${RADIUS_CLIENT_CRYPTO}/client_ee.crt
             # Append CA certs to EE certs
-            sudo -E sh -c 'cat tests/ca1/ca.example.net.cert.pem >> ${RADIUS_EE_CRYPTO}/radius_ee.crt'  # KILL?
-            # sudo -E sh -c 'cat tests/ca2/ca.example.net.cert.pem >> ${RADIUS_CLIENT_CRYPTO}/client_ee.crt'  # KILL?
+            sudo -E sh -c 'cat tests/ca1/ca.example.net.cert.pem >> ${RADIUS_EE_CRYPTO}/radius_ee.crt'
+            # sudo -E sh -c 'cat tests/ca2/ca.example.net.cert.pem >> ${RADIUS_CLIENT_CRYPTO}/client_ee.crt'
             sudo -E sh -c 'cat tests/ca1/ca.example.net.cert.pem > ${RADIUS_CLIENT_CRYPTO}/ca-certificates.crt'
             # Copy CA certs to the Freeradius certs dir
             sudo -E sh -c 'cp tests/ca1/ca.example.net.cert.pem ${CA1_PEMFILE}'
             sudo -E sh -c 'cp tests/ca2/ca.example.net.cert.pem /etc/freeradius/3.0/certs/ca2.cert.pem'
             # Combine our CA certs into one file for the RADIUS server
-            sudo -E sh -c 'cat ${CA1_PEMFILE} > ${TRUSTED_CLIENT_CA_FILE} && cat ${CA2_PEMFILE} >> ${TRUSTED_CLIENT_CA_FILE}'
+            sudo -E sh -c 'cat ${CA2_PEMFILE} > ${TRUSTED_CLIENT_CA_FILE}'
             sudo ls /etc/freeradius/3.0/certs/
             # Copy private PKI CA certs to openssl's certs dir.
             sudo cp /etc/freeradius/3.0/certs/ca1.cert.pem /usr/lib/ssl/certs
@@ -132,6 +135,7 @@ jobs:
             sudo -E sh -c 'echo "${FIRST_LINE}" > "${FREERADIUS_AKI_MAPPING_FILE}"'
             echo "Freeradius identity to authority mapping:"
             sudo -E cat ${FREERADIUS_AKI_MAPPING_FILE}
+            sudo -E python3 ${TEST_SCRIPTS_BASE}/create_testing_trust_map.py --ssid=SSID1 --dnsname=${LEGIT_DNSNAME} --aki=${LEGIT_AKI} --outfile=${FREERADIUS_TRUST_MAP}
       - run:
           name: Start Freeradius server and test eapol
           command: |
@@ -139,7 +143,8 @@ jobs:
             sudo chown freerad:freerad /tmp/radiusd
             sudo freeradius -X &
             sleep 5
-            echo ">>>>TESTING GOOD CONFIG"
-            sudo -E sh -c '${EAPOL_BIN} -c ${EAPOL_CONFIG_DIR}/eapol_test.conf -s testing123 -r 1'
-            echo ">>>>TESTING BAD CONFIG"
-            sudo -E sh -c '${EAPOL_BIN} -c ${EAPOL_CONFIG_DIR}/eapol_test_fail.conf -s testing123 -r 1' && echo ">>>>This test is supposed to fail, and you should not see this message" &&exit 1
+            which pkix_cd_verify
+            echo ">>>>Testing good config, expect success."
+            sudo -E sh -c '${EAPOL_BIN} -c ${EAPOL_CONFIG_DIR}/eapol_test.conf -s testing123 -r 1 -N 30:s:00-00-00-00-00-01:SSID1'
+            echo ">>>>Testing AKI misalignment (cross-domain signing) config. Expect failure."
+            sudo -E sh -c '${EAPOL_BIN} -c ${EAPOL_CONFIG_DIR}/eapol_test_fail.conf -s testing123 -r 1 -N 30:s:00-00-00-00-00-01:SSID1' || exit 0

@@ -29,13 +29,20 @@ class Utility:
                          "AnotherAKI"]
                     }
                 }
+        
+        Return: True if file was updated, False otherwise.
         """
-        with open(path) as f_on_disk:
-            current_map = json.load(f_on_disk)
+        try:
+            with open(path) as f_on_disk:
+                current_map = json.load(f_on_disk)
+        except FileNotFoundError:
+            current_map = {}
         if not current_map == trust_map:
             with open(path, 'wb') as f_on_disk:
                 json.dump(trust_map, f_on_disk)
                 print("Updated trust store at {}".format(path))
+                return True
+        return False
     
     @classmethod
     def get_authz_config(cls, path):
@@ -46,7 +53,8 @@ class Utility:
         SSID names... sorry. Also, don't start your SSID 
         with a space. Because that won't work either.
 
-        This function organizes permitted realms by DNSName.
+        This function organizes permitted Called-Station-IDs 
+        by DNSName.
 
         If there are incorrectly-formatted lines in the file,
         the problem line number will be printed to stdout and
