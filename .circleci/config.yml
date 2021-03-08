@@ -99,15 +99,14 @@ jobs:
             sudo -E sh -c 'cat tests/ca1/ca.example.net.cert.pem > ${RADIUS_CLIENT_CRYPTO}/ca-certificates.crt'
             # Copy CA certs to the Freeradius certs dir
             sudo -E sh -c 'cp tests/ca1/ca.example.net.cert.pem ${CA1_PEMFILE}'
-            sudo -E sh -c 'cp tests/ca2/ca.example.net.cert.pem /etc/freeradius/3.0/certs/ca2.cert.pem'
+            sudo -E sh -c 'cp tests/ca2/ca.example.net.cert.pem ${CA2_PEMFILE}'
             # Combine our CA certs into one file for the RADIUS server
-            sudo -E sh -c 'cat ${CA2_PEMFILE} > ${TRUSTED_CLIENT_CA_FILE}'
+            sudo -E sh -c 'cat ${CA1_PEMFILE} > ${TRUSTED_CLIENT_CA_FILE}'
+            sudo -E sh -c 'cat ${CA2_PEMFILE} >> ${TRUSTED_CLIENT_CA_FILE}'
             sudo ls /etc/freeradius/3.0/certs/
-            # Copy private PKI CA certs to openssl's certs dir.
-            sudo cp /etc/freeradius/3.0/certs/ca1.cert.pem /usr/lib/ssl/certs
-            sudo cp /etc/freeradius/3.0/certs/ca2.cert.pem /usr/lib/ssl/certs
-            # Rehash all the certs
-            sudo sh -c 'cd /etc/freeradius/3.0/certs && sudo c_rehash ./ && sudo c_rehash' # one of these rehashes is unnecessary.
+            sudo -E sh -c 'cat ${TRUSTED_CLIENT_CA_FILE}'
+            # Rehash the certs
+            sudo sh -c 'cd /etc/freeradius/3.0/certs && sudo c_rehash ./'
             # Peek at what we've done...
             echo "RADIUS EE crypto dir: ${RADIUS_EE_CRYPTO}"
             sudo -E ls ${RADIUS_EE_CRYPTO}
@@ -147,4 +146,5 @@ jobs:
             echo ">>>>Testing good config, expect success."
             sudo -E sh -c '${EAPOL_BIN} -c ${EAPOL_CONFIG_DIR}/eapol_test.conf -s testing123 -r 1 -N 30:s:00-00-00-00-00-01:SSID1'
             echo ">>>>Testing AKI misalignment (cross-domain signing) config. Expect failure."
+            echo ">>>>This test fails because the identity name and AKI do not align."
             sudo -E sh -c '${EAPOL_BIN} -c ${EAPOL_CONFIG_DIR}/eapol_test_fail.conf -s testing123 -r 1 -N 30:s:00-00-00-00-00-01:SSID1' || exit 0

@@ -80,7 +80,7 @@ openssl req \
     -x509 \
     -days 7300 \
     -sha256 \
-    -subj "/C=US/ST=CA/O=Example Networks/CN=${CA_CN:=NADA}" \
+    -subj "/C=US/ST=CA/O=Example Networks/CN=${CA_CN:-NADA}" \
     -out ${LOCAL_CA_CERT}
 openssl x509 -noout -text -in ${LOCAL_CA_CERT}
 touch ${LOCAL_CA_DIR}/demoCA/index.txt
