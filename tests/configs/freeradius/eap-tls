@@ -94,6 +94,7 @@ eap {
 	#  ANYONE who has a certificate signed by them can
 	#  authenticate via EAP-TLS!  This is likely not what you want.
 	tls-config tls-common {
+		cadir = /etc/freeradius/certs
 		# private_key_password = whatever
 		private_key_file = /etc/freeradius/ee_crypto/radius_ee.key
 
@@ -120,7 +121,8 @@ eap {
 		#  In that case, this CA file should contain
 		#  *one* CA certificate.
 		#
-		ca_file = /etc/freeradius/client_crypto/ca-certificates.crt
+		# Testing without this file, which normally holds multiple CA certs.
+		## ca_file = /etc/freeradius/client_crypto/ca-certificates.crt
 
 	 	#  OpenSSL will automatically create certificate chains,
 	 	#  unless we tell it to not do that.  The problem is that

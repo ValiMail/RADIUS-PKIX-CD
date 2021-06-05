@@ -35,9 +35,9 @@ setup(name=PROJECT_NAME,
       license="BSD",
       keywords="radius pkix-cd dane tls tlsa dns certificate discovery",
       url="https://github.com/valimail/{}".format(PROJECT_NAME),
-      packages=[PROJECT_NAME],
+      packages=["radius_pkix_cd", "radius_pkix_cd.scripts"],
       long_description=build_long_desc(),
-      install_requires=["dane-discovery==0.9"],
+      install_requires=["dane-discovery==0.15"],
       entry_points={
           "console_scripts": [
               "pkix_cd_manage_trust = radius_pkix_cd.scripts.pkix_cd_manage_trust:main",

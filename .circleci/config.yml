@@ -17,22 +17,25 @@ jobs:
       EAPOL_BIN: /home/circleci/project/wpa_supplicant-2.9/wpa_supplicant/eapol_test
       LEGIT_CERT_PATH: tests/ca2/ecc.air-quality-sensor._device.example.net.cert.pem
       ILLEGIT_CERT_PATH: tests/ca1/ecc.air-quality-sensor._device.example.net.cert.pem
-      TRUSTED_CLIENT_CA_FILE: /etc/freeradius/3.0/certs/ca-certificates-combined.crt
-      CA1_PEMFILE: /etc/freeradius/3.0/certs/ca1.cert.pem
-      CA2_PEMFILE: /etc/freeradius/3.0/certs/ca2.cert.pem
+      TRUSTED_CLIENT_CA_FILE: /etc/freeradius/certs/ca-certificates-combined.crt
+      CA1_PEMFILE: /etc/freeradius/certs/ca1.cert.pem
+      CA2_PEMFILE: /etc/freeradius/certs/ca2.cert.pem
       CA1_CN: Example Networks CA1
-      CA2_CN: Example Networks CA2
+      CA2_CN: Example Networks CA1
       EAPOL_CONFIG_DIR: ./tests/configs/eapol_test
-      FREERADIUS3_CONFIG_DIR: ./tests/configs/freeradius/3.0
+      FREERADIUS3_CONFIG_DIR: ./tests/configs/freeradius
       SSL_CONFIG_DIR: ./tests/configs/ssl
       WPA_BUILD_CONFIG_DIR: ./tests/configs/wpa_build
       TEST_DEPENDENCIES_DIR: ./tests/dependencies
       TEST_SCRIPTS_BASE: ./tests/scripts
+    # CA1 is the illegitimate CA, CA2 is the one we trust.
     steps:
       - checkout
       - run:
           name: Install deps
           command: |
+              sudo sh -c 'echo "deb https://packages.networkradius.com/releases/debian-buster buster main" >> /etc/apt/sources.list'
+              sudo apt-key adv --keyserver keys.gnupg.net --recv-key 0x41382202
               sudo apt-get update
               cat ${TEST_DEPENDENCIES_DIR}/os_packages | sudo xargs apt-get install 
               sudo chmod 755 ${TEST_SCRIPTS_BASE}/generate_crypto.sh
@@ -80,8 +83,8 @@ jobs:
       - run:
           name: Set Freeradius config
           command: |
-            sudo cp ${FREERADIUS3_CONFIG_DIR}/eap-tls /etc/freeradius/3.0/mods-enabled/eap
-            sudo cp ${FREERADIUS3_CONFIG_DIR}/default /etc/freeradius/3.0/sites-enabled
+            sudo cp ${FREERADIUS3_CONFIG_DIR}/eap-tls /etc/freeradius/mods-enabled/eap
+            sudo cp ${FREERADIUS3_CONFIG_DIR}/default /etc/freeradius/sites-enabled
       - run:
           name: Set keys and certs
           command: |
@@ -101,17 +104,19 @@ jobs:
             sudo -E sh -c 'cp tests/ca1/ca.example.net.cert.pem ${CA1_PEMFILE}'
             sudo -E sh -c 'cp tests/ca2/ca.example.net.cert.pem ${CA2_PEMFILE}'
             # Combine our CA certs into one file for the RADIUS server
-            sudo -E sh -c 'cat ${CA1_PEMFILE} > ${TRUSTED_CLIENT_CA_FILE}'
-            sudo -E sh -c 'cat ${CA2_PEMFILE} >> ${TRUSTED_CLIENT_CA_FILE}'
-            sudo ls /etc/freeradius/3.0/certs/
-            sudo -E sh -c 'cat ${TRUSTED_CLIENT_CA_FILE}'
+            ## sudo -E sh -c 'cat ${CA1_PEMFILE} > ${TRUSTED_CLIENT_CA_FILE}'
+            ## sudo -E sh -c 'cat ${CA2_PEMFILE} >> ${TRUSTED_CLIENT_CA_FILE}'
+            sudo ls /etc/freeradius/certs/
+            ## sudo -E sh -c 'cat ${TRUSTED_CLIENT_CA_FILE}'
             # Rehash the certs
-            sudo sh -c 'cd /etc/freeradius/3.0/certs && sudo c_rehash ./'
+            sudo sh -c 'cd /etc/freeradius/certs && sudo c_rehash ./'
             # Peek at what we've done...
             echo "RADIUS EE crypto dir: ${RADIUS_EE_CRYPTO}"
             sudo -E ls ${RADIUS_EE_CRYPTO}
             echo "RADIUS client crypto dir: ${RADIUS_CLIENT_CRYPTO}"
             sudo ls -lah ${RADIUS_CLIENT_CRYPTO}
+            cat ${LEGIT_CERT_PATH}
+            cat ${ILLEGIT_CERT_PATH}
             whoami
             echo "RADIUS key and cert:"
             sudo -E chown -R freerad:freerad ${RADIUS_EE_CRYPTO}
@@ -127,6 +132,11 @@ jobs:
             echo "Get the legit DNS name" 
             export LEGIT_DNSNAME=`openssl x509 -noout -text -in ${LEGIT_CERT_PATH} | grep -A1 "X509v3 Subject Alternative Name" | head -2 | tail -1 | sed -e 's/DNS://g' -e 's/[[:space:]]//g'`
             echo "Legit: ${LEGIT_DNSNAME} ${LEGIT_AKI}"
+            echo "CA certificate metadata:"
+            echo "${CA1_PEMFILE}"
+            openssl x509 -noout -text -in ${CA1_PEMFILE}
+            echo "${CA2_PEMFILE}"
+            openssl x509 -noout -text -in ${CA2_PEMFILE}
             sudo -E touch ${FREERADIUS_AKI_MAPPING_FILE}
             sudo ls /etc/freeradius/
             export FIRST_LINE="${LEGIT_DNSNAME}|${LEGIT_AKI}"
@@ -143,8 +153,8 @@ jobs:
             sudo freeradius -X &
             sleep 5
             which pkix_cd_verify
-            echo ">>>>Testing good config, expect success."
+            echo "\n\n\n>>>>>>>>>>>>>>\nTesting good config, expect success."
             sudo -E sh -c '${EAPOL_BIN} -c ${EAPOL_CONFIG_DIR}/eapol_test.conf -s testing123 -r 1 -N 30:s:00-00-00-00-00-01:SSID1'
-            echo ">>>>Testing AKI misalignment (cross-domain signing) config. Expect failure."
+            echo "\n\n\n>>>>>>>>>>>>>>>\nTesting AKI misalignment (cross-domain signing) config. Expect failure."
             echo ">>>>This test fails because the identity name and AKI do not align."
             sudo -E sh -c '${EAPOL_BIN} -c ${EAPOL_CONFIG_DIR}/eapol_test_fail.conf -s testing123 -r 1 -N 30:s:00-00-00-00-00-01:SSID1' || exit 0
