@@ -30,13 +30,18 @@ def main():
     for dnsname, _ in trust_map.items():
         identity = Identity(dnsname)
         akis = []
-        for _, cert in identity.get_all_certificates(filters="PKIX-CD"):
-            akis.append(DANE.get_authority_key_id_from_certificate(cert))
-            ca_certificates.add(DANE.get_ca_certificate_for_identity(dnsname, cert))
-        configured_trust[dnsname] = akis
+        try:
+            for _, cert in identity.get_all_certificates(filters=["PKIX-CD"]).items():
+                akis.append(DANE.get_authority_key_id_from_certificate(cert))
+                ca_certificates.add(DANE.get_ca_certificate_for_identity(dnsname, cert))
+            configured_trust[dnsname] = akis
+        except ValueError as err:
+            print("Recoverable error: {}".format(err))
+            print("Continuing...")
+            continue
     if Utility.update_trust_store_file(args.trustmap, configured_trust):
         print("Updated trust store file.")
-        Utility.update_ca_file([x for x in ca_certificates])
+        Utility.update_ca_file(args.cacerts, [x for x in ca_certificates])
     else:
         print("No update to trust store file.")
 

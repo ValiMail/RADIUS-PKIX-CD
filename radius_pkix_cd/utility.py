@@ -37,8 +37,10 @@ class Utility:
                 current_map = json.load(f_on_disk)
         except FileNotFoundError:
             current_map = {}
+        except json.decoder.JSONDecodeError:
+            current_map = {}
         if not current_map == trust_map:
-            with open(path, 'wb') as f_on_disk:
+            with open(path, 'w') as f_on_disk:
                 json.dump(trust_map, f_on_disk)
                 print("Updated trust store at {}".format(path))
                 return True
@@ -133,3 +135,9 @@ class Utility:
         except ValueError:
             return False
         return True
+
+    @classmethod
+    def update_ca_file(cls, file_name, pem_certs):
+        """Write all CA certificates to a file."""
+        with open(file_name, "w") as ca_file:
+            ca_file.write(b"\n".join(pem_certs))
