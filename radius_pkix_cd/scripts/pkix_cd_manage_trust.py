@@ -27,14 +27,20 @@ def main():
     trust_map = Utility.get_authz_config(args.infile)
     configured_trust = {}
     ca_certificates = set([])
-    for dnsname, _ in trust_map.items():
+    for dnsname, realms in trust_map.items():
+        for realm in realms:
+            if realm not in configured_trust:
+                configured_trust[realm] = {dnsname: []}
+            else:
+                if not dnsname in configured_trust[realm]:
+                    configured_trust[realm][dnsname] = []
         identity = Identity(dnsname)
         akis = []
         try:
             for _, cert in identity.get_all_certificates(filters=["PKIX-CD"]).items():
                 akis.append(DANE.get_authority_key_id_from_certificate(cert))
                 ca_certificates.add(DANE.get_ca_certificate_for_identity(dnsname, cert))
-            configured_trust[dnsname] = akis
+            configured_trust[realm][dnsname] = akis
         except ValueError as err:
             print("Recoverable error: {}".format(err))
             print("Continuing...")

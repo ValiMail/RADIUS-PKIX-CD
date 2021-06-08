@@ -139,5 +139,5 @@ class Utility:
     @classmethod
     def update_ca_file(cls, file_name, pem_certs):
         """Write all CA certificates to a file."""
-        with open(file_name, "w") as ca_file:
+        with open(file_name, "wb") as ca_file:
             ca_file.write(b"\n".join(pem_certs))

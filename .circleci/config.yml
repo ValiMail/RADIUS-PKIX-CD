@@ -4,7 +4,11 @@ workflows:
   version: 2
   test_integration:
     jobs:
-      - "test_freeradius"
+      - "test_freeradius":
+        filters:
+            tags:
+              only: /.*/
+
 jobs:
   "test_freeradius":
     docker:
@@ -158,3 +162,7 @@ jobs:
             echo "\n\n\n>>>>>>>>>>>>>>>\nTesting AKI misalignment (cross-domain signing) config. Expect failure."
             echo ">>>>This test fails because the identity name and AKI do not align."
             sudo -E sh -c '${EAPOL_BIN} -c ${EAPOL_CONFIG_DIR}/eapol_test_fail.conf -s testing123 -r 1 -N 30:s:00-00-00-00-00-01:SSID1' || exit 0
+      - run:
+          name: Print configs
+          command: |
+            cat ${FREERADIUS_TRUST_MAP}
