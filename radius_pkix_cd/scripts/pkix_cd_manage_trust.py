@@ -3,6 +3,7 @@ import argparse
 
 from dane_discovery.identity import Identity
 from dane_discovery.dane import DANE
+from dane_discovery.pki import PKI
 
 from radius_pkix_cd.utility import Utility
 
@@ -38,7 +39,7 @@ def main():
         akis = []
         try:
             for _, cert in identity.get_all_certificates(filters=["PKIX-CD"]).items():
-                akis.append(DANE.get_authority_key_id_from_certificate(cert))
+                akis.append(PKI.get_authority_key_id_from_certificate(cert))
                 ca_certificates.add(DANE.get_ca_certificate_for_identity(dnsname, cert))
             configured_trust[realm][dnsname] = akis
         except ValueError as err:
