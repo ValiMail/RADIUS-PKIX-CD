@@ -5,6 +5,7 @@ import sys
 
 from dane_discovery.dane import DANE
 from dane_discovery.identity import Identity
+from dane_discovery.pki import PKI
 
 from radius_pkix_cd.utility import Utility
 
@@ -53,7 +54,7 @@ def main():
 
     # Make sure that the AKI matches what PKIX-CD indicates.
     # Failures here may indicate cross-domain impersonation.
-    aki = DANE.get_authority_key_id_from_certificate(cert_pem)
+    aki = PKI.get_authority_key_id_from_certificate(cert_pem)
     if aki not in current_map[ssid][args.calling]:
         print("Presented certificate does not map to PKIX-CD authority certificate!")
         print("{} not in {}".format(aki, current_map[ssid][args.calling]))

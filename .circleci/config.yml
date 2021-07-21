@@ -39,7 +39,7 @@ jobs:
           name: Install deps
           command: |
               sudo sh -c 'echo "deb https://packages.networkradius.com/releases/debian-buster buster main" >> /etc/apt/sources.list'
-              sudo apt-key adv --keyserver keys.gnupg.net --recv-key 0x41382202
+              curl -s 'https://packages.networkradius.com/pgp/packages%40networkradius.com' | sudo tee /etc/apt/trusted.gpg.d/packages.networkradius.com.asc > /dev/null
               sudo apt-get update
               cat ${TEST_DEPENDENCIES_DIR}/os_packages | sudo xargs apt-get install 
               sudo chmod 755 ${TEST_SCRIPTS_BASE}/generate_crypto.sh
