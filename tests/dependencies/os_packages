@@ -12,3 +12,4 @@ libreadline-dev
 libncurses5-dev
 libnl-genl-3-dev 
 libnl-3-dev
+python3-pip
