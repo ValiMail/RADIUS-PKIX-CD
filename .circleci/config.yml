@@ -12,7 +12,7 @@ workflows:
 jobs:
   "test_freeradius":
     docker:
-      - image: circleci/python:3.8
+      - image: cimg/python:3.8
     environment:
       RADIUS_EE_CRYPTO: /etc/freeradius/ee_crypto
       RADIUS_CLIENT_CRYPTO: /etc/freeradius/client_crypto
@@ -38,7 +38,9 @@ jobs:
       - run:
           name: Install deps
           command: |
-              sudo sh -c 'echo "deb https://packages.networkradius.com/releases/debian-buster buster main" >> /etc/apt/sources.list'
+              cat /etc/lsb-release
+              sudo apt-get update && sudo apt-get upgrade -y
+              sudo sh -c 'echo "deb http://packages.networkradius.com/freeradius-3.0/ubuntu/focal focal main" >> /etc/apt/sources.list'
               curl -s 'https://packages.networkradius.com/pgp/packages%40networkradius.com' | sudo tee /etc/apt/trusted.gpg.d/packages.networkradius.com.asc > /dev/null
               sudo apt-get update
               cat ${TEST_DEPENDENCIES_DIR}/os_packages | sudo xargs apt-get install 
