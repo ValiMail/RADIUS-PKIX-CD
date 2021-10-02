@@ -2,14 +2,41 @@ Changelog
 =========
 
 
-v0.5
+v0.6
 ----
+
+Changes
+~~~~~~~
+- Update testing configuration and OS dependencies. [Ash Wilson]
+
+Other
+~~~~~
+- Build(deps): bump dane-discovery from 0.17 to 0.18. [dependabot[bot]]
+
+  Bumps [dane-discovery](https://github.com/valimail/dane_discovery) from 0.17 to 0.18.
+  - [Release notes](https://github.com/valimail/dane_discovery/releases)
+  - [Commits](https://github.com/valimail/dane_discovery/commits)
+
+  ---
+  updated-dependencies:
+  - dependency-name: dane-discovery
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  ...
+
+
+v0.5 (2021-07-21)
+-----------------
 
 New
 ~~~
 - Support PKI with intermediate CA certificates. [Ash Wilson]
 
   Close #1
+
+Changes
+~~~~~~~
+- Increment minor version, update CHANGELOG.rst. [Ash Wilson]
 
 Other
 ~~~~~
