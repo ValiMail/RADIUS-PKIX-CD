@@ -19,6 +19,8 @@ parser = argparse.ArgumentParser(description=description)
 parser.add_argument("--infile", dest="infile", required=True, help="Network access list.")
 parser.add_argument("--trustmap", dest="trustmap", required=True, help="Trust map (outfile) for pkix_cd_verify.")
 parser.add_argument("--cacerts", dest="cacerts", required=True, help="Outfile for CA certificates.")
+parser.add_argument("--ns_override", dest="ns_override", required=False, help="Override system name server.")
+parser.set_defaults(ns_override=None)
 
 
 def main():
@@ -34,7 +36,7 @@ def main():
             else:
                 if not dnsname in configured_trust[realm]:
                     configured_trust[realm][dnsname] = []
-        identity = Identity(dnsname)
+        identity = Identity(dnsname, None, args.ns_override)
         akis = []
         try:
             for _, cert in identity.get_all_certificates(filters=["PKIX-CD"]).items():

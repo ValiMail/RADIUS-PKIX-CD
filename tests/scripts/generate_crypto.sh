@@ -11,6 +11,7 @@ set -xe
 ##############
 # Domains
 LOCAL_DOMAIN="example.net"
+IOTREG_DOMAIN="iotregistry.ca"
 
 # Base paths
 CRYPTO_EXPORT_PATH="${HOME}/export"
@@ -22,10 +23,15 @@ DEV_DIR="${CRYPTO_DIR}/device"
 RSA_DEVICE_SERIAL="rsa"
 DEVICE_MODEL="air-quality-sensor"
 ECC_DEVICE_SERIAL="ecc"
+IOTREG_DEVICE_SERIAL="iotreg"
 
-# Building DIDN-IDs for devices
+# Building DIDN-IDs for non-registry devices
 RSA_DIDN_ID="${RSA_DEVICE_SERIAL}.${DEVICE_MODEL}._device.${LOCAL_DOMAIN}"
 ECC_DIDN_ID="${ECC_DEVICE_SERIAL}.${DEVICE_MODEL}._device.${LOCAL_DOMAIN}"
+
+# Building CN and DIDN_ID for registry-bound devices
+IOTREG_CN="${IOTREG_DEVICE_SERIAL}.${IOTREG_DOMAIN}"
+IOTREG_DIDN_ID="${IOTREG_DEVICE_SERIAL}._device.${LOCAL_DOMAIN}"
 
 # Specific file paths
 
@@ -42,6 +48,11 @@ RSA_DEV_CERT="${DEV_DIR}/${RSA_DIDN_ID}.cert.pem"
 ECC_DEV_KEY="${DEV_DIR}/${ECC_DIDN_ID}.key.pem"
 ECC_DEV_CSR="${DEV_DIR}/${ECC_DIDN_ID}.csr.pem"
 ECC_DEV_CERT="${DEV_DIR}/${ECC_DIDN_ID}.cert.pem"
+
+## IOTREG Dev
+IOTREG_DEV_KEY="${DEV_DIR}/iotreg.ca.key.pem"
+IOTREG_DEV_CSR="${DEV_DIR}/iotreg.ca.csr.pem"
+IOTREG_DEV_CERT="${DEV_DIR}/iotreg.ca.cert.pem"
 
 # Signing configurations
 RSA_SSL_CONFIG="${DEV_DIR}/${RSA_DIDN_ID}.conf"
@@ -159,6 +170,42 @@ openssl ca \
   -batch \
   -out ${ECC_DEV_CERT}
 
+##############
+# Create local
+# device ECC p256 IOT REGISTRY
+##############
+cd ${LOCAL_CA_DIR}
+openssl ecparam -genkey \
+    -name prime256v1 \
+    -out ${IOTREG_DEV_KEY} 
+openssl req \
+    -key ${IOTREG_DEV_KEY} \
+    -new \
+    -sha256 \
+    -subj "/C=US/ST=CA/O=Example Networks/CN=${IOTREG_CN}" \
+    -addext "subjectAltName = DNS:${IOTREG_DIDN_ID}" \
+    -addext "keyUsage = nonRepudiation, digitalSignature, keyEncipherment" \
+    -out ${IOTREG_DEV_CSR}
+
+echo "#################### LOCAL ECC DEV CSR ####################"
+openssl req -noout -text -in ${IOTREG_DEV_CSR}
+# Add the SAN config to the end of the openssl conf file.
+cp /usr/lib/ssl/openssl.cnf ${ECC_SSL_CONFIG}
+echo -e "\n[alternate_names]" >> ${ECC_SSL_CONFIG}
+echo -e "DNS.2 = ${IOTREG_DIDN_ID}\n" >> ${ECC_SSL_CONFIG}
+# Accommodate the default behavior of openssl ca.
+openssl ca \
+  -config ${ECC_SSL_CONFIG} \
+  -days 375 \
+  -in ${IOTREG_DEV_CSR} \
+  -cert ${LOCAL_CA_CERT} \
+  -keyfile ${LOCAL_CA_KEY} \
+  -outdir /tmp/ \
+  -extensions usr_cert \
+  -extfile ${ECC_SSL_CONFIG} \
+  -batch \
+  -out ${IOTREG_DEV_CERT}
+
 # cat ${RSA_SSL_CONFIG}
 ##############
 # Copy files
@@ -172,7 +219,11 @@ cp -t ${CRYPTO_EXPORT_PATH} \
     ${RSA_DEV_CERT} \
     ${ECC_DEV_KEY} \
     ${ECC_DEV_CSR} \
-    ${ECC_DEV_CERT}
+    ${ECC_DEV_CERT} \
+    ${IOTREG_DEV_KEY} \
+    ${IOTREG_DEV_CSR} \
+    ${IOTREG_DEV_CERT}
+
 
 ##############
 # Print results

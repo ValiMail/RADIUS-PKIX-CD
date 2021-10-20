@@ -2,9 +2,14 @@
 import json
 import re
 
+from dane_discovery.pki import PKI
+from dane_discovery.dane import DANE
+
 
 class Utility:
     """Various utility functions found here."""
+
+    iot_registry_org_domains = ["iotregistry.ca"]
 
     @classmethod
     def update_trust_store_file(cls, path, trust_map):
@@ -141,3 +146,65 @@ class Utility:
         """Write all CA certificates to a file."""
         with open(file_name, "wb") as ca_file:
             ca_file.write(b"\n".join(pem_certs))
+
+    @classmethod
+    def check_iot_registry_issuance(cls, cert_pem):
+        """Return True if the certificate was issued by IoT Registry."""
+        cert_meta = PKI.get_cert_meta(cert_pem)
+        common_name = cert_meta["subject"]["commonName"]
+        for registry_domain in cls.iot_registry_org_domains:
+            if cls.dnsname_in_domain(common_name, registry_domain):
+                return True
+        return False
+
+    @classmethod
+    def check_iot_registry_revoked(cls, cert_pem, ns_override=None):
+        """Return True if the certificate has been revoked by the IoT registry.
+        
+        We expect to find exactly one TLSA RR for the identity in the IoT registry.
+        
+        That TLSA record must be delivered with DNSSEC, and it must be a 
+        ``3 0 1`` representation.
+
+        The SHA256 hash must match the presented certificate.
+        """
+        cert_meta = PKI.get_cert_meta(cert_pem)
+        registry_dns_name = cert_meta["subject"]["commonName"]
+        registry_entries = DANE.get_tlsa_records(registry_dns_name, nsaddr=ns_override)
+        if not registry_entries:
+            print("No IoT registry entry for identity!")
+            return True
+        registry_entry = registry_entries[0]
+        reg_txt = str(registry_entry)
+        if not (registry_entry["certificate_usage"] == 3 
+                and registry_entry["selector"] == 0
+                and registry_entry["matching_type"] == 1):
+            print("Unexpected TLSA record format from registry: {}".format(reg_txt))
+            return True
+        expected_sha = DANE.generate_sha_by_selector(cert_pem, "sha256", 0)
+        if not expected_sha == registry_entry["certificate_association"]:
+            print("Hash mismatch: Registry: {} != Cert: {}".format(registry_entry["certificate_association"], expected_sha))
+            return True
+        return False
+        
+    @classmethod
+    def domain_str_to_labels(cls, domain_name):
+        """Return a list of domain name labels, in reverse-DNS order."""
+        labels = domain_name.rstrip(".").split(".")
+        labels.reverse()
+        return labels
+
+    @classmethod
+    def dnsname_in_domain(cls, dns_name, domain_name):
+        """Return True if dns_name falls under domain_name, else False.
+        
+        Forces to lowercase for comparison, since DNS is case-insensitive"""
+        dns_name_parts = cls.domain_str_to_labels(dns_name.lower())
+        domain_name_parts = cls.domain_str_to_labels(domain_name.lower())
+        if len(dns_name_parts) <= len(domain_name_parts):
+            return False
+        for domain_label in domain_name_parts:
+            dns_label = dns_name_parts.pop(0)
+            if dns_label != domain_label:
+                return False
+        return True

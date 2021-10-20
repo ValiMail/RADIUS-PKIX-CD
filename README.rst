@@ -13,26 +13,32 @@ The MAC address part is ignored by these tools, and they use the SSID in the pro
 
 :: 
 
-    pkix_cd_manage_trust -h
-    usage: pkix_cd_manage_trust [-h] --infile INFILE --trustmap TRUSTMAP --cacerts CACERTS
+    pkix_cd_manage_trust.py [-h] --infile INFILE --trustmap TRUSTMAP --cacerts CACERTS
 
-    Manage trust map for radius_pkix_cd tool. Infile format is pipe delimited: CalledStation|my._device.example.com ...where CalledStation is the Called-Station-Id and my._device.example.com is the name of the device allowed to
-    access the Called-Station-Id. Devices may be associated with multiple CalledStations.
+    Manage trust map for radius_pkix_cd tool. Infile format is pipe delimited: 
+        CalledStation|my._device.example.com 
+    ...where CalledStation is the Called-Station-Id and my._device.example.com is the name of the device allowed to access the Called-Station-Id. Devices may be associated with multiple CalledStations.
 
     optional arguments:
-      -h, --help           show this help message and exit
-      --infile INFILE      Network access list.
-      --trustmap TRUSTMAP  Trust map (outfile) for pkix_cd_verify.
-      --cacerts CACERTS    Outfile for CA certificates.
+      -h, --help                show this help message and exit
+      --infile INFILE           Network access list.
+      --trustmap TRUSTMAP       Trust map (outfile) for pkix_cd_verify.
+      --cacerts CACERTS         Outfile for CA certificates.
+      --ns_override NS          Override the default system nameserver.
 
 ----
 
 ::
 
-    pkix_cd_verify -h
-    usage: pkix_cd_verify [-h] --called CALLED --calling CALLING --certfile CERTFILE --trustmap TRUSTMAP
+    pkix_cd_verify.py [-h] --called CALLED --calling CALLING --certfile CERTFILE --trustmap TRUSTMAP [--live-verify] [--require-registry]
 
-    Authorize supplicants against the access configuration, using PKIX-CD for identity to trust anchor mapping.
+    Authorize supplicants against the access configuration, using PKIX-CD for identity to trust anchor mapping. 
+    Exit codes: 
+        1: Missing trust map. 
+        2: Missing certificate file. 
+        3: Invalid called-station-id 
+        4: Live verify failed. 
+        5: IoT Registry check failed.
 
     optional arguments:
       -h, --help           show this help message and exit
@@ -40,6 +46,9 @@ The MAC address part is ignored by these tools, and they use the SSID in the pro
       --calling CALLING    Callling-Station-Id.
       --certfile CERTFILE  Certificate file presented by supplicant.
       --trustmap TRUSTMAP  Trust map, provided by pkix_cd_manage_trust.
+      --live-verify        Verify directly against DNS, in addition to cached information.
+      --require-registry   Set this to require IoT Registry revocation checks for all clients.
+      --ns_override NS     Override the default system nameserver.
 
 ----
 
