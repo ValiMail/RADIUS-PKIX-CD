@@ -84,6 +84,7 @@ jobs:
       - run:
           name: Test radius_pkix_cd
           command: |
+              pip3 install .
               pip3 install -r tests/dependencies/requirements-test.txt
               python3 -m py.test --cov=radius_pkix_cd --cov-report=xml --cov-report=term-missing ./tests/integration/
       - run:

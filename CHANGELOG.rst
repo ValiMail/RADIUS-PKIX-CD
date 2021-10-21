@@ -2,8 +2,18 @@ Changelog
 =========
 
 
-v0.7
+v0.8
 ----
+
+New
+~~~
+- Add support for iotregistry.ca. [Ash Wilson]
+
+  Close #5
+
+
+v0.7 (2021-10-18)
+-----------------
 - Build(deps): bump dane-discovery from 0.18 to 0.19. [dependabot[bot]]
 
   Bumps [dane-discovery](https://github.com/valimail/dane_discovery) from 0.18 to 0.19.
