@@ -151,7 +151,7 @@ jobs:
             sudo -E sh -c 'echo "${FIRST_LINE}" > "${FREERADIUS_AKI_MAPPING_FILE}"'
             echo "Freeradius identity to authority mapping:"
             sudo -E cat ${FREERADIUS_AKI_MAPPING_FILE}
-            sudo -E python3 ${TEST_SCRIPTS_BASE}/create_testing_trust_map.py --ssid=SSID1 --dnsname=${LEGIT_DNSNAME} --aki=${LEGIT_AKI} --outfile=${FREERADIUS_TRUST_MAP}
+            sudo -E python3 ${TEST_SCRIPTS_BASE}/create_testing_trust_map.py --ssid=SSID1 --dnsname=${LEGIT_DNSNAME} --aki=${LEGIT_AKI} --outfile=${FREERADIUS_TRUST_MAP} --cert_path=${LEGIT_CERT_PATH}
       - run:
           name: Start Freeradius server and test eapol
           command: |
