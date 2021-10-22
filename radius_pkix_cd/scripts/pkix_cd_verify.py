@@ -68,12 +68,11 @@ def main():
     if args.calling not in current_map[ssid]:
         print("Identity {} not allowed access to {}".format(args.calling, ssid))
 
-    # Make sure that the AKI matches what PKIX-CD indicates.
-    # Failures here may indicate cross-domain impersonation.
-    aki = PKI.get_authority_key_id_from_certificate(cert_pem)
-    if aki not in current_map[ssid][args.calling]:
-        print("Presented certificate does not map to PKIX-CD authority certificate!")
-        print("{} not in {}".format(aki, current_map[ssid][args.calling]))
+    # Match the certificate's hash against what we have in the trust map.
+    cert_hash = DANE.generate_sha_by_selector(cert_pem, "sha256", 0)
+    if cert_hash not in current_map[ssid][args.calling]["cert_hashes"]:
+        print("Presented certificate does not map to accepted certificate hash!")
+        print("{} not in {}".format(cert_hash, current_map[ssid][args.calling]["cert_hashes"]))
         exit(4)
 
     # Next, we check the cert against the live DNS config!

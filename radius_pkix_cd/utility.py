@@ -29,9 +29,14 @@ class Utility:
                 name and the value is a list of valid
                 authorityKeyIDs.
                 {"MySSID": 
-                    {"my._device.example": 
-                        ["AKI1",
-                         "AnotherAKI"]
+                    {"my._device.example":
+                        {"cert_hashes": 
+                            ["cert_hash_1",
+                             "cert_hash_2],
+                         "akis": 
+                            ["AKI1",
+                             "AnotherAKI"]
+                        }
                     }
                 }
         

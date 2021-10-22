@@ -3,6 +3,7 @@ import argparse
 
 from dane_discovery.identity import Identity
 from dane_discovery.pki import PKI
+from dane_discovery.dane import DANE
 
 from radius_pkix_cd.utility import Utility
 
@@ -38,11 +39,14 @@ def main():
                     configured_trust[realm][dnsname] = []
         identity = Identity(dnsname, None, args.ns_override)
         akis = []
+        cert_hashes = []
         try:
             for _, cert in identity.get_all_certificates(filters=["PKIX-CD"]).items():
                 akis.append(PKI.get_authority_key_id_from_certificate(cert))
                 ca_certificates.add(identity.get_pkix_cd_trust_chain(cert)["root"])
-            configured_trust[realm][dnsname] = akis
+                cert_hashes.append(DANE.generate_sha_by_selector(cert, "sha256", 0))
+            configured_trust[realm][dnsname]["akis"] = akis
+            configured_trust[realm][dnsname]["cert_hashes"] = cert_hashes
         except (ValueError, KeyError) as err:
             print("Recoverable error: {}".format(err))
             print("Continuing...")
