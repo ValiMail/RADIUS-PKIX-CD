@@ -2,14 +2,23 @@ Changelog
 =========
 
 
-v0.8
+v0.9
 ----
+
+Changes
+~~~~~~~
+- Authorize certificates by hash of entity certificate, instead of AKI.
+  [Ash Wilson]
+
+  Close #7
+
+
+v0.8 (2021-10-21)
+-----------------
 
 New
 ~~~
 - Add support for iotregistry.ca. [Ash Wilson]
-
-  Close #5
 
 
 v0.7 (2021-10-18)
