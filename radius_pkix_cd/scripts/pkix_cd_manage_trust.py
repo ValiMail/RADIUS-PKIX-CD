@@ -33,10 +33,10 @@ def main():
     for dnsname, realms in trust_map.items():
         for realm in realms:
             if realm not in configured_trust:
-                configured_trust[realm] = {dnsname: []}
+                configured_trust[realm] = {dnsname: {}}
             else:
                 if not dnsname in configured_trust[realm]:
-                    configured_trust[realm][dnsname] = []
+                    configured_trust[realm][dnsname] = {}
         identity = Identity(dnsname, None, args.ns_override)
         akis = []
         cert_hashes = []
