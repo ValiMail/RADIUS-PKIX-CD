@@ -2,8 +2,16 @@ Changelog
 =========
 
 
-v0.9
-----
+v0.10
+-----
+
+Fix
+~~~
+- Correct structure for json file format. [Ash Wilson]
+
+
+v0.9 (2021-10-22)
+-----------------
 
 Changes
 ~~~~~~~
