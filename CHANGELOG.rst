@@ -2,8 +2,24 @@ Changelog
 =========
 
 
-v0.10
+v0.11
 -----
+- Build(deps): bump dane-discovery from 0.19 to 0.20. [dependabot[bot]]
+
+  Bumps [dane-discovery](https://github.com/valimail/dane_discovery) from 0.19 to 0.20.
+  - [Release notes](https://github.com/valimail/dane_discovery/releases)
+  - [Commits](https://github.com/valimail/dane_discovery/commits)
+
+  ---
+  updated-dependencies:
+  - dependency-name: dane-discovery
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  ...
+
+
+v0.10 (2021-10-23)
+------------------
 
 Fix
 ~~~
